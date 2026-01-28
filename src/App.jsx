@@ -113,11 +113,10 @@ function App() {
                 style={{ width: 120, height: "auto", marginBottom: 20 }}
               />
               <Typography variant="h5" fontWeight="bold" gutterBottom>
-                Welcome to CTC Group Portal
+                Welcome to CTC Group Discount Portal
               </Typography>
               <Typography variant="body2" color="text.secondary" mb={4}>
-                Access your employee dashboard, leave records, and personal information
-                securely with your Microsoft account.
+                Access your discount card securely with your Microsoft account.
               </Typography>
               <Button
                 onClick={login}
