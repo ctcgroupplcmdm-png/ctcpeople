@@ -180,10 +180,10 @@ function DiscountCard() {
                   src={companyLogos[user.companyName]}
                   alt="logo"
                   style={{
-                    maxHeight: 80,
+                    maxHeight: 150,
                     width: "100%",
                     objectFit: "contain",
-                    opacity: 0.35,
+                    opacity: 0.9,
                   }}
                 />
               </Box>
