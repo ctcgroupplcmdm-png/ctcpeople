@@ -30,8 +30,9 @@ function DiscountCard() {
   const [loading, setLoading] = useState(true);
   const [now] = useState(new Date());
 
+  // ✅ DiscountCard Logic App URL (from your DiscountCard version)
   const urlUserInfo =
-    "https://prod-253.westeurope.logic.azure.com/workflows/9825f1492046406ca55a012da579ae3c/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=PNW2Pv5Bp6DnM7rTWHyU3luOrCqoXvMlxD0Xlz5525A";
+    "https://prod-253.westeurope.logic.azure.com:443/workflows/9825f1492046406ca55a012da579ae3c/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=PNW2Pv5Bp6DnM7rTWHyU3luOrCqoXvMlxD0Xlz5525A";
 
   const logout = () => instance.logoutRedirect();
 
@@ -82,6 +83,7 @@ function DiscountCard() {
 
   if (!user) return null;
 
+  // Split name for display
   const parts = user.name?.split(" ") || [];
   const first = parts[0] || "";
   const middle = parts.length > 2 ? parts.slice(1, -1).join(" ") : "";
@@ -99,7 +101,7 @@ function DiscountCard() {
         p: 2,
       }}
     >
-      {/* Card */}
+      {/* Discount Card */}
       <Paper
         elevation={12}
         sx={{
@@ -121,6 +123,7 @@ function DiscountCard() {
           DISCOUNT CARD
         </Typography>
 
+        {/* Company Logo */}
         {companyLogos[user.companyName] && (
           <img
             src={companyLogos[user.companyName]}
@@ -137,6 +140,7 @@ function DiscountCard() {
           />
         )}
 
+        {/* Name */}
         <Typography variant="h5" fontWeight="bold">
           {first}
         </Typography>
@@ -149,10 +153,12 @@ function DiscountCard() {
           {last}
         </Typography>
 
+        {/* Employee ID */}
         <Typography sx={{ mt: 4, fontWeight: 600 }}>
           Employee Code: {user.employeeId}
         </Typography>
 
+        {/* Timestamp */}
         <Typography
           variant="caption"
           sx={{
@@ -167,7 +173,7 @@ function DiscountCard() {
         </Typography>
       </Paper>
 
-      {/* Logout button at bottom */}
+      {/* Logout Button */}
       <Button
         variant="contained"
         color="error"
