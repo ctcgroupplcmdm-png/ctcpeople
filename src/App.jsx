@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useMsal } from "@azure/msal-react";
 import { loginRequest } from "./authConfig";
-import DiscountCard from "./DiscountCard"; // Your DiscountCard page
+import DiscountCard from "./discount-card"; // Your DiscountCard page
 import { Box, Typography, Paper, Button, CircularProgress } from "@mui/material";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
