@@ -157,11 +157,7 @@ function DiscountCard() {
               {first}
             </Typography>
 
-            {middle && (
-              <Typography variant="h6" color="text.secondary">
-                {middle}
-              </Typography>
-            )}
+            
 
             <Typography variant="h5" fontWeight="bold">
               {last}
