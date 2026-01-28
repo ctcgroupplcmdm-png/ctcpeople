@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useMsal } from "@azure/msal-react";
-import { Box, Typography, Button, Paper, CircularProgress } from "@mui/material";
-
+import Tooltip from "@mui/material/Tooltip";
 import argosyLogo from "./assets/logos/argosy.png";
 import ctcLogo from "./assets/logos/ctc.png";
 import artviewLogo from "./assets/logos/artview.png";
@@ -12,6 +11,18 @@ import apexlLogo from "./assets/logos/apex.png";
 import nkslLogo from "./assets/logos/nks.png";
 import limnilLogo from "./assets/logos/limni.png";
 
+import {
+  Box,
+  Grid,
+  Typography,
+  Button,
+  Chip,
+  CircularProgress,
+  Alert,
+} from "@mui/material";
+import { useNavigate } from "react-router-dom";
+
+// ✅ Map company names to logo filenames
 const companyLogos = {
   "Argosy Trading Company Ltd": argosyLogo,
   "Cyprus Trading Corporation Plc": ctcLogo,
@@ -24,50 +35,93 @@ const companyLogos = {
   "Cyprus Limni Resorts & Golf Courses Plc": limnilLogo,
 };
 
-function DiscountCard() {
+function LandingPage() {
   const { instance, accounts } = useMsal();
-  const [user, setUser] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [userStatus, setUserStatus] = useState("Unknown");
   const [loading, setLoading] = useState(true);
-  const [now] = useState(new Date());
+  const navigate = useNavigate();
 
-  // ✅ DiscountCard Logic App URL (from your DiscountCard version)
+  // Logic App URLs
   const urlUserInfo =
-    "https://prod-253.westeurope.logic.azure.com:443/workflows/9825f1492046406ca55a012da579ae3c/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=PNW2Pv5Bp6DnM7rTWHyU3luOrCqoXvMlxD0Xlz5525A";
+    "https://prod-126.westeurope.logic.azure.com:443/workflows/c3bf058acb924c11925e5c660e1c3b5a/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=tWDPd-5b4hzpzvJJjelfZCARBviG3gIJdTLHnXttUFg";
+  const urlUserStatus =
+    "https://prod-165.westeurope.logic.azure.com:443/workflows/c484da6f94ad4cd5aea8a92377375728/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=Bt8eh3QsyGHRYRmzqf2S0ujsaGxgxyVqUyCpYQmiIMY";
 
-  const logout = () => instance.logoutRedirect();
+  // Run-once guard to avoid duplicate triggers
+  const didInit = useRef(false);
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchData = async () => {
       if (accounts.length === 0) return;
 
       const account = accounts[0];
       const oid = account.idTokenClaims?.oid || account.idTokenClaims?.sub;
 
       try {
-        const res = await fetch(urlUserInfo, {
+        // 🟦 1) Get real user info from your flow (no year → user info branch)
+        const infoRes = await fetch(urlUserInfo, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ oid }),
         });
+        const infoData = await infoRes.json();
 
-        const data = await res.json();
+        const employeeId = infoData.employeeId;
 
-        setUser({
-          name: data.displayName || account.name || "User",
-          employeeId: data.employeeId || "N/A",
-          companyName: data.companyName || "Company",
+        setUserData({
+          name: infoData.displayName || account.name || "User",
+          employeeId: employeeId || "N/A",
+          phone: infoData.mobilePhone || "",
+          companyName: infoData.companyName || "Company",
         });
+
+        // 🟩 2) Fetch user status (uses employeeId from the info flow)
+        const statusRes = await fetch(urlUserStatus, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ oid, employeeId }),
+        });
+        const statusData = await statusRes.json();
+
+        const status =
+          statusData.status === true
+            ? "NeedsUpdate"
+            : statusData.status === false
+            ? "UpToDate"
+            : "Unknown";
+
+        setUserStatus(status);
+
+        // 🧠 Save it so other pages can read it
+        localStorage.setItem(
+          "needsUpdate",
+          status === "NeedsUpdate" ? "true" : "false"
+        );
+        localStorage.setItem(
+          "userData",
+          JSON.stringify({
+            name: infoData.displayName || account.name || "User",
+            employeeId: employeeId || "N/A",
+            phone: infoData.mobilePhone || "",
+            companyName: infoData.companyName || "Company",
+          })
+        );
       } catch (err) {
-        console.error("Error fetching user info:", err);
+        console.error("Error fetching user data or status:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUser();
+    if (didInit.current) return;
+    didInit.current = true;
+    fetchData();
   }, [accounts]);
 
-  if (loading)
+  const logout = () => instance.logoutRedirect();
+
+  if (loading || !userData)
     return (
       <Box
         sx={{
@@ -81,109 +135,173 @@ function DiscountCard() {
       </Box>
     );
 
-  if (!user) return null;
-
-  // Split name for display
-  const parts = user.name?.split(" ") || [];
-  const first = parts[0] || "";
-  const middle = parts.length > 2 ? parts.slice(1, -1).join(" ") : "";
-  const last = parts.length > 1 ? parts[parts.length - 1] : "";
-
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        backgroundColor: "#f8fafc",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        p: 2,
-      }}
-    >
-      {/* Discount Card */}
-      <Paper
-        elevation={12}
+    <Box sx={{ p: 4, backgroundColor: "#f8fafc", minHeight: "100vh" }}>
+      {/* 🔹 Header Bar */}
+      <Grid
+        container
+        spacing={2}
+        alignItems="center"
+        justifyContent="space-between"
+        sx={{ mb: 3 }}
+      >
+        <Grid item sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {userData?.companyName && companyLogos[userData.companyName] && (
+  <img
+    src={companyLogos[userData.companyName]}
+    alt={userData.companyName}
+    style={{ width: 60, height: 60, objectFit: "contain" }}
+  />
+)}
+         
+        </Grid>
+
+        <Grid item>
+          <Button variant="outlined" color="error" onClick={logout}>
+            Logout
+          </Button>
+        </Grid>
+      </Grid>
+
+      {/* 🔹 Welcome Message */}
+      <Box textAlign="center" sx={{ mt: 10 }}>
+        <Typography variant="h3" fontWeight="bold" gutterBottom>
+          Welcome, {userData.name}
+        </Typography>
+        <Typography variant="h6" color="text.secondary" gutterBottom>
+          Employee ID: {userData.employeeId}
+        </Typography>
+
+        <Chip
+          label={userData.companyName}
+          color="primary"
+          sx={{ fontSize: "1rem", mt: 1 }}
+        />
+      </Box>
+
+      {/* 🔹 Buttons + Warning Banner */}
+      <Box
         sx={{
-          width: 360,
-          height: 520,
-          p: 4,
-          borderRadius: 4,
-          position: "relative",
-          textAlign: "center",
-          background: "linear-gradient(to bottom, #B9DCFF 0%, #ffffff 60%)",
-          boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          mt: 8,
+          gap: 3,
         }}
       >
-        <Typography
-          variant="h4"
-          fontWeight="bold"
-          sx={{ mb: 6, letterSpacing: 3, textTransform: "uppercase" }}
-        >
-          DISCOUNT CARD
-        </Typography>
-
-        {/* Company Logo */}
-        {companyLogos[user.companyName] && (
-          <img
-            src={companyLogos[user.companyName]}
-            alt="logo"
-            style={{
-              position: "absolute",
-              bottom: "25%",
-              left: 16,
-              right: 16,
-              maxHeight: 180,
-              objectFit: "contain",
-              transform: "translateY(50%)",
-            }}
-          />
-        )}
-
-        {/* Name */}
-        <Typography variant="h5" fontWeight="bold">
-          {first}
-        </Typography>
-        {middle && (
-          <Typography variant="h6" color="text.secondary">
-            {middle}
-          </Typography>
-        )}
-        <Typography variant="h5" fontWeight="bold">
-          {last}
-        </Typography>
-
-        {/* Employee ID */}
-        <Typography sx={{ mt: 4, fontWeight: 600 }}>
-          Employee Code: {user.employeeId}
-        </Typography>
-
-        {/* Timestamp */}
-        <Typography
-          variant="caption"
+        {/* Buttons Row */}
+        <Box
           sx={{
-            position: "absolute",
-            bottom: 16,
-            left: "50%",
-            transform: "translateX(-50%)",
-            color: "gray",
+            display: "flex",
+            justifyContent: "center",
+            gap: 4,
+            flexWrap: "wrap",
           }}
         >
-          {now.toLocaleString()}
-        </Typography>
-      </Paper>
+          <Tooltip
+            title={
+              userStatus === "NeedsUpdate"
+                ? "Access to the Annual Leave Portal is disabled until your personal information is updated."
+                : ""
+            }
+          >
+            {/* Tooltip needs a wrapper <span> when button is disabled */}
+            <span>
+              <Button
+                variant="contained"
+                color="primary"
+                size="large"
+                sx={{
+                  px: 5,
+                  py: 2,
+                  textTransform: "none",
+                  fontSize: "1.1rem",
+                  borderRadius: "12px",
+                  opacity: userStatus === "NeedsUpdate" ? 0.6 : 1,
+                }}
+                disabled={userStatus === "NeedsUpdate"}
+                onClick={() => navigate("/annual-leave")}
+              >
+                🗓 Annual Leave Portal
+              </Button>
+            </span>
+          </Tooltip>
 
-      {/* Logout Button */}
-      <Button
-        variant="contained"
-        color="error"
-        onClick={logout}
-        sx={{ mt: 6, borderRadius: 2, px: 6 }}
-      >
-        Logout
-      </Button>
+          {/* ✅ Keep Personal Information Button */}
+          <Button
+            variant="contained"
+            color="success"
+            size="large"
+            sx={{
+              px: 5,
+              py: 2,
+              textTransform: "none",
+              fontSize: "1.1rem",
+              borderRadius: "12px",
+            }}
+            onClick={() => navigate("/personal-info")}
+          >
+            👤 Personal Information
+          </Button>
+		  {/* ✅ Discount Card Button */}
+<Button
+  variant="contained"
+  color="secondary"
+  size="large"
+  sx={{
+    px: 5,
+    py: 2,
+    textTransform: "none",
+    fontSize: "1.1rem",
+    borderRadius: "12px",
+   
+  }}
+  onClick={() => navigate("/discount-card")}
+>
+  💳 Discount Card
+</Button>
+
+
+        </Box>
+
+        {/* ⚠️ Warning Banner */}
+        {userStatus === "NeedsUpdate" && (
+          <Alert
+            severity="warning"
+            sx={{
+              mt: 3,
+              maxWidth: "600px",
+              textAlign: "center",
+              borderRadius: "12px",
+              fontSize: "1rem",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            Our records show you haven’t updated your personal information in
+            over 2 years.
+            <Button
+              variant="contained"
+              color="warning"
+              size="small"
+              sx={{
+                mt: 2,
+                textTransform: "none",
+                borderRadius: "8px",
+                fontWeight: "bold",
+              }}
+              onClick={() =>
+                navigate("/personal-info", { state: { forceUpdate: true } })
+              }
+            >
+              Update Now
+            </Button>
+          </Alert>
+        )}
+      </Box>
     </Box>
   );
 }
 
-export default DiscountCard;
+export default LandingPage;
