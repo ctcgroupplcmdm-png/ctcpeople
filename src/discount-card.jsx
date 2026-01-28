@@ -148,20 +148,22 @@ function DiscountCard() {
 
           {/* Logo */}
           {companyLogos[user.companyName] && (
-            <img
-              src={companyLogos[user.companyName]}
-              alt="logo"
-              style={{
-                position: "absolute",
-                bottom: "25%",
-                left: 16,
-                right: 16,
-                maxWidth: "calc(100% - 32px)",
-                maxHeight: 180,
-                objectFit: "contain",
-              }}
-            />
-          )}
+  <img
+    src={companyLogos[user.companyName]}
+    alt="logo"
+    style={{
+      position: "absolute",
+      bottom: 20,          // stick to bottom
+      left: 20,
+      right: 20,
+      maxHeight: 90,      // smaller so it never overlaps
+      objectFit: "contain",
+      opacity: 0.25,      // subtle watermark look (optional but recommended)
+      pointerEvents: "none",
+    }}
+  />
+)}
+
 
           {/* Names */}
           <Typography variant="h5" fontWeight="bold">
