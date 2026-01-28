@@ -47,7 +47,7 @@ function DiscountCard() {
 
   // ✅ SAME Logic App as Landing Page
   const urlUserInfo =
-    "https://prod-126.westeurope.logic.azure.com:443/workflows/c3bf058acb924c11925e5c660e1c3b5a/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=tWDPd-5b4hzpzvJJjelfZCARBviG3gIJdTLHnXttUFg";
+    "https://prod-253.westeurope.logic.azure.com:443/workflows/9825f1492046406ca55a012da579ae3c/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=PNW2Pv5Bp6DnM7rTWHyU3luOrCqoXvMlxD0Xlz5525A";
 
   useEffect(() => {
     const fetchUser = async () => {
